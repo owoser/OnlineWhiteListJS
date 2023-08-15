@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线白名单申请</title>
+    <link rel="stylesheet" href="/pop/style.css">
+    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+    <script src="/pop/script.js"></script>
+    <style>
+        :root {
+            --background: #48494a;
+            --border: #1e1e1f;
+            --border-top: #5a5b5c;
+            --border-bottom: #323334;
+            --input: #313233;
+            --input-top: #242425;
+            --button: #d0d1d4;
+            --button-border: #ecedee;
+            --button-bottom: #737373;
+            --button-hover: #bebebe;
+        }
+        body {
+            color: #ededed;
+            font-size: 16px;
+            background: no-repeat url('./web/bg.png') center center fixed;
+            background-size: cover;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .cover {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgb(10 10 10 / 50%);
+        }
+        body > div {
+            z-index: 1;
+        }
+
+        .form, .form input, .form button {
+            color: inherit;
+            font-size: 14px;
+            border: 2px solid var(--border);
+            border-radius: 0;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .container {
+            max-width: 40rem;
+            border: 2px solid var(--border);
+            margin: 20px 5px;
+        }
+
+        .form {
+            padding: 1.4rem 2rem;
+            background: var(--background);
+            border-style: none;
+            box-shadow: inset 0 2px 0 var(--border-top),
+                        inset 0 -2px 0 var(--border-bottom);
+        }
+        .form .flex {
+            display: flex;
+            height: 44px;
+
+        }
+        .form > div + div {
+            margin-top: 5px;
+        }
+
+        .form label {
+            color: #ffffff;
+            line-height: 2.2;
+            margin-top: 10px;
+        }
+        .form input {
+            width: 100%;
+            height: 44px;
+            background: var(--input);
+            box-shadow: inset 0 4px 0 var(--input-top);
+            padding: 12px 11px 8px;
+        }
+        .form button {
+            width: 8rem;
+            height: 44px;
+            color: #000;
+            background: var(--button);
+            box-shadow: inset 2px 2px 0 var(--button-border),
+                        inset -2px -2px 0 var(--button-border);
+            position: relative;
+            padding: 8px 11px 12px;
+        }
+        .form button::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--button-bottom);
+            border-top: 2px solid var(--button-border);
+        }
+        .form button:hover {
+            background: var(--button-hover);
+        }
+        .form button:focus{
+            margin-top: 4px;
+            height: 40px;
+            background: var(--button-hover);
+        }
+        .form button:focus::after {
+            height: 0px;
+        }
+
+        a, b, strong {
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="cover"></div>
+    <div class="container">
+        <div class="form">
+            <h2 style="text-align: center;margin: 0;">
+                <img src="https://bbs.owoser.cn/assets/logo-z3oqp8dh.png" alt="OWOSER Logo"><br/>
+                基 岩 服 白 名 单 申 请
+            </h2>
+        </div>
+        <div class="form">
+            <p>目前为服务器第一期，部分东西尚未调试到位。<b>需要通过白名单</b>才能进服游玩。</p>
+            <p>如有问题请上论坛进行反馈：<a href="https://bbs.owoser.cn">https://bbs.owoser.cn</a></p>
+            <p>服务器食用指南：<a href="https://bbs.owoser.cn/d/224/2">https://bbs.owoser.cn/d/224/2</a></p>
+            <p>客户端安装包（仅提供可以玩服务器的版本）：<a href="https://bbs.owoser.cn/p/9-mcdw">https://bbs.owoser.cn/p/9-mcdw</a></p>
+        </div>
+        <div class="form">
+            <div>
+                <label for="plID">游戏名称</label>
+                <div class="flex">
+                    <input type="text" id="plID" title="游戏ID" placeholder="您玩游戏时的 ID">
+                </div>
+            </div>
+            <div>
+                <label for="plEmail">电子邮箱</label>
+                <div class="flex">
+                    <input type="email" id="plEmail" title="电子邮箱" placeholder="仅用于通知您审核的结果">&ensp;
+                    <button id="apply">申请</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $('#apply').click(() => {
+            let plID = $('#plID').val()
+            let plEmail = $('#plEmail').val()
+
+            $.ajax({
+                type: 'POST',
+                contentType: "application/json",
+                url: 'http://127.0.0.1/api/apply',
+                data: JSON.stringify({
+                    "plID": plID,
+                    "plEmail": plEmail
+                }),
+                success: (data) => {
+                    if(data.state == "CheckExistsYes") {
+                        bs4pop.notice("你已申请过了", { type: 'danger' })
+                    } else {
+                        bs4pop.notice("申请成功", { type: 'success' })
+                    }
+
+                    $('#plID').val("")
+                    $('#plEmail').val("")
+                },
+                error: (data) => bs4pop.notice(data.responseJSON.result, { type: 'danger' })
+            });
+        })
+    </script>
+</body>
+</html>

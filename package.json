@@ -1,0 +1,15 @@
+{
+  "name": "onlinewhitelist",
+  "version": "0.0.5",
+  "description": "在线白名单插件",
+  "main": "index.js",
+  "author": "Longjie",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.1",
+    "mysql": "^2.18.1"
+  }
+}

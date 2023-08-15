@@ -1,0 +1,41 @@
+### 获取玩家数据列表接口 (OP)
+GET http://127.0.0.1/api/playerlist/state/0
+
+
+### 管理员登录接口
+POST http://127.0.0.1/login
+Content-Type: application/json
+
+{
+    "user": "longjie",
+    "password": "fuck"
+}
+
+
+### 玩家申请接口
+POST http://127.0.0.1/api/apply
+Content-Type: application/json
+
+{
+    "plID": "Ironacike",
+    "plEmail": "fuck@qq.com"
+}
+
+
+### 更新玩家状态接口 (OP)
+PATCH http://127.0.0.1/api/player/1
+Content-Type: application/json
+
+{
+    "plID": "Ironacike",
+    "plState": 1
+}
+
+
+### 删除玩家数据接口 (OP)
+DELETE http://127.0.0.1/api/player/1
+Content-Type: application/json
+
+{
+    "plID": "Ironacike"
+}

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线白名单申请</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/pop/style.css">
+    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="/pop/script.js"></script>
+    <style>
+        table th {
+            border-top: none!important;
+        }
+        table th, table td {
+            white-space: nowrap;
+        }
+        table td span {
+            display: inline;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="my-4">白名单申请 # 后台</h2>
+
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#login">登录</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#waiting">待审核</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#passed">已通过</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div id="login" class="container tab-pane active">
+                <div class="mt-4" style="max-width: 20rem;margin: auto;">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                          <label for="user" class="input-group-text">账号</label>
+                        </div>
+                        <input type="text" class="form-control" id="user">
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                          <label for="pwd" class="input-group-text">密码</label>
+                        </div>
+                        <input type="password" class="form-control" id="pwd">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" id="btn-login">登录</button>
+                </div>
+            </div>
+            <div id="waiting" class="tab-pane">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped mt-4">
+                        <thead>
+                            <tr>
+                                <th>申请玩家</th>
+                                <th width="240px">邮箱</th>
+                                <th width="120px">申请时间</th>
+                                <th width="170px">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-state0"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="passed" class="tab-pane">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped mt-4">
+                        <thead>
+                            <tr>
+                                <th>白名单玩家</th>
+                                <th width="240px">邮箱</th>
+                                <th width="120px">申请时间</th>
+                                <th width="170px">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-state1"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        var Cookie = {
+            get: (cname)=>{
+                var name = cname + "=";
+                var ca = document.cookie.split(';');
+            
+                for(var i=0; i<ca.length; i++) {
+                    var c = ca[i].trim();
+                    if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+                }
+                return "";
+            }
+        }
+
+        if(Cookie.get("_LOVE") != '') {
+            $("#login").html("<p class='mt-4'>已登录验证！2小时后登录验证将自动失效，无须手动退出。</p>")
+            showTabAndData()
+        }
+
+        $("#btn-login").click(() => {
+            let user = $("#user").val()
+            let pwd = $("#pwd").val()
+
+            $.ajax({
+                type: 'POST',
+                contentType: "application/json",
+                url: '/login',
+                data: JSON.stringify({
+                    user: user,
+                    password: pwd
+                }),
+                success: data => {
+                    bs4pop.notice(data.result, { type: 'success' })
+                    showTabAndData()
+                },
+                error: data => bs4pop.notice(data.responseJSON.result, { type: 'danger' })
+            })
+        })
+
+        $('a[href="#waiting"]').click(() => getPlaylist(0))
+        $('a[href="#passed"]').click(() => getPlaylist(1))
+
+        $("tbody").on("click", "#btn-pass", function() {
+            const id = $(this).attr("data-id")
+            const name = $(this).attr("data-name")
+            const dom = $(this).closest("tr")
+
+            updateState(id, name, 1, dom)
+        })
+        $("tbody").on("click", "#btn-undo", function() {
+            const id = $(this).attr("data-id")
+            const name = $(this).attr("data-name")
+            const dom = $(this).closest("tr")
+
+            updateState(id, name, 0, dom)
+        })
+        $("tbody").on("click", "#btn-del, #btn-nopass", function() {
+            const id = $(this).attr("data-id")
+            const name = $(this).attr("data-name")
+            const dom = $(this).closest("tr")
+
+            deletePlayer(id, name, dom)
+        })
+
+        function showTabAndData() {
+            $(".nav-tabs a, .tab-content > div").removeClass("active")
+            $(".nav-tabs a:eq(1), .tab-content > div:eq(1)").addClass("active")
+            getPlaylist(0)
+        }
+
+        function getPlaylist(state) {
+            $.ajax({
+                type: 'GET',
+                contentType: "application/json",
+                url: '/api/playerlist/state/' + state,
+                success: data => outHtml(data.result),
+                error: data => bs4pop.notice(data.responseJSON.result, { type: 'danger' })
+            })
+
+            function outHtml(data) {
+                let str = ''
+                $("#table-state" + state).html("")
+                $.each(data, (i, v) => {
+                    str +=`<tr>
+                        <td><span>${v.player_id}</span></td>
+                        <td><span>${v.player_email}</span></td>
+                        <td><span>${v.date}</span></td>
+                        <td>
+                            <div class="btn-group">`
+                    
+                    if(state) {
+                        str += `<button type="button" class="btn btn-sm btn-primary" id="btn-undo" data-id="${v.id}" data-name="${v.player_id}">撤销</button>`
+                    } else {
+                        str += `<button type="button" class="btn btn-sm btn-primary" id="btn-pass" data-id="${v.id}" data-name="${v.player_id}">通过</button>
+                                <button type="button" class="btn btn-sm btn-secondary" id="btn-nopass" data-id="${v.id}" data-name="${v.player_id}">不通过</button>`
+                    }
+
+                    str +=`     <button type="button" class="btn btn-sm btn-danger" id="btn-del" data-id="${v.id}" data-name="${v.player_id}">删除</button>
+                            </div>
+                        </td>
+                    </tr>`
+
+                    $("#table-state" + state).append(str)
+                    str = ""
+                })
+            }
+        }
+
+        function updateState(id, name, state, dom) {
+            $.ajax({
+                type: 'PATCH',
+                contentType: "application/json",
+                url: '/api/player/' + id,
+                data: JSON.stringify({
+                    plID: name,
+                    plState: state
+                }),
+                success: data => {
+                    if(data.result.affectedRows) {
+                        bs4pop.notice("更新成功", { type: 'success' })
+                        dom.remove()
+                    } else {
+                        bs4pop.notice("已是该设置无须更新", { type: 'danger' })
+                    }
+                },
+                error: data => bs4pop.notice(data.responseJSON.result, { type: 'danger' })
+            })
+        }
+
+        function deletePlayer(id, name, dom) {
+            $.ajax({
+                type: 'DELETE',
+                contentType: "application/json",
+                url: '/api/player/' + id,
+                data: JSON.stringify({
+                    plID: name
+                }),
+                success: data => {
+                    if(data.result.affectedRows) {
+                        bs4pop.notice("已删除", { type: 'success' })
+                        dom.remove()
+                    }
+                },
+                error: data => bs4pop.notice(data.responseJSON.result, { type: 'danger' })
+            })
+        }
+    </script>
+</body>
+</html>
